@@ -1,0 +1,183 @@
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+
+<style>
+  body { 
+    background: #c2c2d6; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    font-family: monospace; 
+    margin: 0;
+  }
+  .calculator { 
+    background: black; 
+    padding: 15px; 
+    border-radius: 8px; 
+    width: 320px; 
+    box-shadow: 0px 10px 15px rgba(0,0,0,0.5);
+  }
+  .formulaScreen { 
+    min-height: 20px; 
+    font-size: 1.2rem; 
+    color: orange; 
+    text-align: right; 
+    word-wrap: break-word;
+    margin-bottom: 5px;
+  }
+  #display { 
+    font-size: 2.5rem; 
+    color: white; 
+    text-align: right; 
+    margin-bottom: 15px;
+    background: #222;
+    padding: 5px 10px;
+    border-radius: 4px;
+    overflow-x: hidden;
+  }
+  .pad { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 8px; 
+  }
+  button { 
+    padding: 20px 0; 
+    font-size: 1.5rem; 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 4px;
+    background: #4d4d4d; 
+    color: white; 
+    transition: background 0.2s;
+  }
+  button:hover { background: #999; color: black; }
+  #clear { grid-column: span 2; background: #ac3939; }
+  #clear:hover { background: #f05050; }
+  #equals { grid-column: span 2; background: #004466; }
+  #equals:hover { background: #0077b3; }
+  .operator { background: #666; }
+  #zero { grid-column: span 2; }
+</style>
+
+<script type="text/babel">
+  const ops = ['+', '-', '*', '/'];
+
+  function App() {
+    const [calc, setCalc] = React.useState({
+      current: '0',
+      formula: '',
+      evaluated: false
+    });
+
+    const handleClear = () => {
+      setCalc({ current: '0', formula: '', evaluated: false });
+    };
+
+    const handleNumber = (e) => {
+      const value = e.target.innerText;
+      if (calc.evaluated) {
+        setCalc({ current: value, formula: value !== '0' ? value : '', evaluated: false });
+      } else {
+        if (calc.current === '0' && value === '0') return;
+        const newCurrent = calc.current === '0' || ops.includes(calc.current) ? value : calc.current + value;
+        setCalc({
+          current: newCurrent,
+          formula: calc.current === '0' && value === '0' ? calc.formula : calc.formula + value,
+          evaluated: false
+        });
+      }
+    };
+
+    const handleOperator = (e) => {
+      const value = e.target.innerText;
+      if (calc.evaluated) {
+        setCalc({ current: value, formula: calc.current + value, evaluated: false });
+      } else {
+        let newFormula = calc.formula;
+        
+        // FCC Test Requirement: Handle multiple consecutive operators
+        if (newFormula.endsWith('-') && ops.includes(value)) {
+            newFormula = newFormula.replace(/[*\/+-]+$/, '');
+            setCalc({ current: value, formula: newFormula + value, evaluated: false});
+        } else if (ops.includes(calc.formula.slice(-1))) {
+            if (value === '-') {
+               setCalc({ current: value, formula: calc.formula + value, evaluated: false});
+            } else {
+               newFormula = newFormula.replace(/[*\/+-]+$/, '');
+               setCalc({ current: value, formula: newFormula + value, evaluated: false});
+            }
+        } else {
+           setCalc({ current: value, formula: calc.formula + value, evaluated: false});
+        }
+      }
+    };
+
+    const handleDecimal = () => {
+      if (calc.evaluated) {
+        setCalc({ current: '0.', formula: '0.', evaluated: false });
+      } else if (!calc.current.includes('.')) {
+        setCalc({
+          current: calc.current + '.',
+          formula: calc.formula === '' ? '0.' : calc.formula + '.',
+          evaluated: false
+        });
+      }
+    };
+
+    const handleEvaluate = () => {
+      if (!calc.formula) return;
+      let expression = calc.formula;
+      // Remove trailing operators before evaluating
+      expression = expression.replace(/[*\/+-]+$/, '');
+      
+      try {
+         // Using Math.round to avoid floating point errors like 0.1 + 0.2 = 0.30000000000000004
+         const answer = Math.round(1000000000000 * eval(expression)) / 1000000000000;
+         setCalc({
+            current: answer.toString(),
+            formula: expression + '=' + answer,
+            evaluated: true
+         });
+      } catch(e) {
+         setCalc({ current: 'Error', formula: '', evaluated: true });
+      }
+    };
+
+    return (
+      <div className="calculator">
+        <div className="formulaScreen">{calc.formula}</div>
+        <div id="display">{calc.current}</div>
+        <div className="pad">
+          <button id="clear" onClick={handleClear}>AC</button>
+          <button id="divide" className="operator" onClick={handleOperator}>/</button>
+          <button id="multiply" className="operator" onClick={handleOperator}>*</button>
+          
+          <button id="seven" onClick={handleNumber}>7</button>
+          <button id="eight" onClick={handleNumber}>8</button>
+          <button id="nine" onClick={handleNumber}>9</button>
+          <button id="subtract" className="operator" onClick={handleOperator}>-</button>
+          
+          <button id="four" onClick={handleNumber}>4</button>
+          <button id="five" onClick={handleNumber}>5</button>
+          <button id="six" onClick={handleNumber}>6</button>
+          <button id="add" className="operator" onClick={handleOperator}>+</button>
+          
+          <button id="one" onClick={handleNumber}>1</button>
+          <button id="two" onClick={handleNumber}>2</button>
+          <button id="three" onClick={handleNumber}>3</button>
+          <button id="equals" onClick={handleEvaluate}>=</button>
+          
+          <button id="zero" onClick={handleNumber}>0</button>
+          <button id="decimal" onClick={handleDecimal}>.</button>
+        </div>
+      </div>
+    );
+  }
+
+  ReactDOM.render(<App />, document.getElementById('root'));
+</script>
